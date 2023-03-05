@@ -21,7 +21,7 @@ architecture r2s_p_behav of register_2bit_s_p is
 	    begin
 	    	if RST = '1' then
 	    	      curr_reg_output <= "00";
-	    	elsif CLK'event and CLK='0'  then
+	    	elsif CLK'event and CLK='1'  then
 	    		curr_reg_output(1) <= curr_reg_output(0);
 	    		curr_reg_output(0) <= X;
 	    	end if;
@@ -53,7 +53,7 @@ end r2s_p_behav;
             begin
                 if RST = '1' then
                       curr_reg_output <= "0000000000000000";
-                elsif CLK'event and CLK='0'  then
+                elsif CLK'event and CLK='1'  then
                     curr_reg_output <= curr_reg_output(14 downto 0) & X;
                 end if;
              end process;
