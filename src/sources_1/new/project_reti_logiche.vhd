@@ -54,7 +54,7 @@ end r2s_p_behav;
                 if RST = '1' then
                       curr_reg_output <= "0000000000000000";
                 elsif CLK'event and CLK='0'  then
-                    curr_reg_output <= curr_reg_output(15 downto 1) & X;
+                    curr_reg_output <= curr_reg_output(14 downto 0) & X;
                 end if;
              end process;
             
