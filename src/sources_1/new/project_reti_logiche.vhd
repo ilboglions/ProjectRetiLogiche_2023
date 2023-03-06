@@ -1,4 +1,3 @@
-
 library ieee;
 use ieee.std_logic_1164.all;
 -- ENTITY OUTPUT SELECTOR REGISTER 2B --
@@ -17,7 +16,7 @@ architecture r2s_p_behav of register_2bit_s_p is
         signal curr_reg_output : std_logic_vector(1 downto 0) := (1 downto 0 => '0') ; 
 	begin
 	    
-	    set_reset_function : process(CLK, RST)
+	    set_reset_function : process(CLK, RST, curr_reg_output)
 	    begin
 	    	if RST = '1' then
 	    	      curr_reg_output <= "00";
@@ -25,9 +24,10 @@ architecture r2s_p_behav of register_2bit_s_p is
 	    		curr_reg_output(1) <= curr_reg_output(0);
 	    		curr_reg_output(0) <= X;
 	    	end if;
+	    	OUTPUT <= curr_reg_output;
 	     end process;
 	    
-	    OUTPUT <= curr_reg_output;
+	    
 
 end r2s_p_behav;
 
@@ -46,20 +46,18 @@ end r2s_p_behav;
     end register_16bit_s_p;
     
    architecture r16s_p_behav of register_16bit_s_p is
-            signal curr_reg_output : std_logic_vector(15 downto 0) := "0000000000000000";
+            signal curr_reg_output_addr : std_logic_vector(15 downto 0) := "0000000000000000";
         begin
             
-            set_reset_function : process(CLK, RST)
+            set_reset_function : process(CLK, RST, curr_reg_output_addr)
             begin
                 if RST = '1' then
-                      curr_reg_output <= "0000000000000000";
+                      curr_reg_output_addr <= "0000000000000000";
                 elsif CLK'event and CLK='1'  then
-                    curr_reg_output <= curr_reg_output(14 downto 0) & X;
+                    curr_reg_output_addr <= curr_reg_output_addr(14 downto 0) & X;
                 end if;
+                OUTPUT <= curr_reg_output_addr;
              end process;
-            
-            OUTPUT <= curr_reg_output;
-    
  end r16s_p_behav;
 
 
@@ -78,19 +76,17 @@ entity register_8bit_p_p is
 end register_8bit_p_p;
 
 architecture r8p_p_behav of register_8bit_p_p is
-        signal curr_reg_output : std_logic_vector(7 downto 0) := (7 downto 0 => '0') ; 
+        
 	begin
 	    
 	    set_reset_function : process(CLK, RST)
 	    begin
 	    	if RST = '1' then
-	    	      curr_reg_output <=  "00000000" ;
+	    	      OUTPUT <=  "00000000" ;
 	    	elsif CLK'event and CLK='1'  then
-	    		curr_reg_output <= X;
+	    		OUTPUT <= X;
 	    	end if;
 	     end process;
-	    
-	    OUTPUT <= curr_reg_output;
 
 end r8p_p_behav;
 
@@ -234,36 +230,35 @@ architecture project_reti_logiche_arch of project_reti_logiche is
     -- register_2bit_s_p signals --
      signal out_selection : std_logic_vector(1 downto 0) := (1 downto 0 => '0'); 
      
-     signal enable_rso : std_logic; -- i_clk AND i_start AND director
+     signal enable_rso : std_logic := '0'; -- i_clk AND i_start AND director
     -- register_16bit_s_p signals --    
-     signal enable_ram : std_logic; -- i_clk AND i_start AND NOT director
+     signal enable_ram : std_logic := '0'; -- i_clk AND i_start AND NOT director
      
-     signal rst_cnd_ram: std_logic; --  i_rst AND director
+     signal rst_cnd_ram: std_logic := '0'; --  i_rst AND director
 
     -- output signals --
-    signal out_z0_signal : std_logic_vector(7 downto 0);
-    signal out_z1_signal : std_logic_vector(7 downto 0);
-    signal out_z2_signal : std_logic_vector(7 downto 0);
-    signal out_z3_signal : std_logic_vector(7 downto 0);
+    signal out_z0_signal : std_logic_vector(7 downto 0) := (7 downto 0 => '0'); 
+    signal out_z1_signal : std_logic_vector(7 downto 0) := (7 downto 0 => '0'); 
+    signal out_z2_signal : std_logic_vector(7 downto 0) := (7 downto 0 => '0'); 
+    signal out_z3_signal : std_logic_vector(7 downto 0) := (7 downto 0 => '0'); 
      
      
-     signal enable_z0_reg : std_logic; -- i_clk AND decoder_out[0] AND write_output
-     signal enable_z1_reg : std_logic;
-     signal enable_z2_reg : std_logic;
-     signal enable_z3_reg : std_logic;
+     signal enable_z0_reg : std_logic := '0';-- i_clk AND decoder_out[0] AND write_output
+     signal enable_z1_reg : std_logic := '0';
+     signal enable_z2_reg : std_logic := '0';
+     signal enable_z3_reg : std_logic := '0';
      
      -- decoder signals --
      
-        signal  decoder_out: std_logic_vector(3 downto 0);
+    signal  decoder_out: std_logic_vector(3 downto 0) := (3 downto 0 => '0'); 
      
      -- fsm signals
      
          -- output signals --  
-            signal director :  std_logic;
-            signal write_output  :  std_logic;
-            signal done_signal : std_logic;
-         --  signal mem_addr_sign : std_logic_vector(15 downto 0); 
-         --   signal mem_enable : std_logic;
+            signal director :  std_logic := '0';
+            signal write_output  :  std_logic := '0';
+            signal done_signal : std_logic := '0';
+   
      
 -- 2BIT REGISTER  FOR OUT SELECTION S-P --
 component register_2bit_s_p is
@@ -348,7 +343,7 @@ begin
          ); 
          
          
-         en_rst_reg_address: process( i_clk, i_start, director)
+         en_rst_reg_address: process( i_clk, i_start, director, i_rst)
              begin 
                  enable_ram  <= i_clk AND i_start AND (NOT director);
                  rst_cnd_ram <= i_rst OR director;
@@ -436,6 +431,5 @@ begin
     
 
 end project_reti_logiche_arch;
-
 
 
