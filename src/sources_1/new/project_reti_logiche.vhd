@@ -1,3 +1,4 @@
+
 library ieee;
 use ieee.std_logic_1164.all;
 -- ENTITY OUTPUT SELECTOR REGISTER 2B --
@@ -5,6 +6,7 @@ use ieee.std_logic_1164.all;
 entity register_2bit_s_p is
 
 	port(
+	    ENABLE  : in std_logic;
 		CLK		: in std_logic;
 		RST 	: in std_logic;
 		X 		: in std_logic;
@@ -16,11 +18,11 @@ architecture r2s_p_behav of register_2bit_s_p is
         signal curr_reg_output : std_logic_vector(1 downto 0) := (1 downto 0 => '0') ; 
 	begin
 	    
-	    set_reset_function : process(CLK, RST, curr_reg_output)
+	    set_reset_function : process(CLK, RST, curr_reg_output,ENABLE)
 	    begin
 	    	if RST = '1' then
 	    	      curr_reg_output <= "00";
-	    	elsif CLK'event and CLK='1'  then
+	    	elsif CLK'event and CLK='1' and ENABLE = '1'  then
 	    		curr_reg_output(1) <= curr_reg_output(0);
 	    		curr_reg_output(0) <= X;
 	    	end if;
@@ -38,6 +40,7 @@ end r2s_p_behav;
     entity register_16bit_s_p is
     
         port(
+            ENABLE  : in std_logic;
             CLK		: in std_logic;
             RST 	: in std_logic;
             X 		: in std_logic;
@@ -49,11 +52,11 @@ end r2s_p_behav;
             signal curr_reg_output_addr : std_logic_vector(15 downto 0) := "0000000000000000";
         begin
             
-            set_reset_function : process(CLK, RST, curr_reg_output_addr)
+            set_reset_function : process(CLK, RST, curr_reg_output_addr, ENABLE)
             begin
                 if RST = '1' then
                       curr_reg_output_addr <= "0000000000000000";
-                elsif CLK'event and CLK='1'  then
+                elsif CLK'event and CLK='1' and ENABLE = '1'  then
                     curr_reg_output_addr <= curr_reg_output_addr(14 downto 0) & X;
                 end if;
                 OUTPUT <= curr_reg_output_addr;
@@ -116,6 +119,8 @@ end r8p_p_behav;
     end dec_arch;
 
 
+
+
  -- ENTITY FSM --
 library ieee;               
 use ieee.std_logic_1164.all;
@@ -135,52 +140,46 @@ use ieee.std_logic_1164.all;
       end fsm_controller;
 
 architecture arch_controller of fsm_controller is
+    
     type S is ( s_firstbit, s_secondbit, s_address, s_readmem, s_saveresult, s_writeout );
-    signal current_state, next_state : S;
-    begin
-        comb_process: process(current_state, start)
-            begin
+    signal current_state : S;
+    
+    begin  
+        
+        comb_process: process(current_state)
+            begin   
+                wo <= '0';    
+                dir <= '1';   
+                done <= '0';  
+                mem_en <= '0'; 
                 case current_state is
+               
                     when s_firstbit =>
-                        if start = '1' then
-                            next_state <= s_secondbit;
-                        else
-                            next_state <= s_firstbit;
-                        end if;
                         wo <= '0';
                         dir <= '1';
                         done <= '0';
                         mem_en <= '0';
                     when s_secondbit =>
-                        next_state <= s_address;
                         wo <= '0';
                         dir <= '1';
                         done <= '0';
                         mem_en <= '0';
                     when s_address =>
-                        if start = '1' then
-                            next_state <= s_address;
-                        else
-                            next_state <= s_readmem;
-                        end if;
                         wo <= '0';
                         dir <= '0';
                         done <= '0';
                         mem_en <= '0'; 
                     when s_readmem =>
-                        next_state <= s_saveresult;
                         wo <= '0';
                         dir <= '0';
                         done <= '0';
                         mem_en <= '1'; 
                     when s_saveresult =>
-                        next_state <= s_writeout;
                         wo <= '1';
                         dir <= '0';
                         done <= '0';
                         mem_en <= '1'; 
                     when s_writeout =>
-                        next_state <= s_firstbit;
                         wo <= '0';
                         dir <= '0';
                         done <= '1';
@@ -191,14 +190,46 @@ architecture arch_controller of fsm_controller is
         begin 
             if reset ='1' then
                 current_state <= s_firstbit;
-            elsif (clk'event and clk='0') then
-                current_state <= next_state;
+            elsif (rising_edge(clk)) then
+
+                case current_state is
+            
+                    
+                    when s_firstbit =>
+                        if start = '1' then
+                            current_state <= s_secondbit;
+                        else
+                            current_state <= s_firstbit;
+                        end if;
+
+                    when s_secondbit =>
+                        if start = '1' then
+                             current_state <= s_address;
+                         else
+                             current_state <= s_readmem;
+                         end if;
+                    when s_address =>
+                        if start = '1' then
+                            current_state <= s_address;
+                        else
+                            current_state <= s_readmem;
+                        end if;
+
+                    when s_readmem =>
+                        current_state <= s_saveresult;
+ 
+                    when s_saveresult =>
+                        current_state <= s_writeout;
+                    when s_writeout =>
+                        if start = '1' then
+                            current_state <= s_firstbit;
+                        else
+                            current_state <= s_firstbit;
+                        end if;
+                end case;
             end if;
         end process;
 end architecture;
-
-
-
 
 -- PROJECT ENTITY --
 library ieee;               
@@ -264,6 +295,7 @@ architecture project_reti_logiche_arch of project_reti_logiche is
 component register_2bit_s_p is
 
 	port(
+	    ENABLE  : in std_logic;
 		CLK		: in std_logic;
 		RST 	: in std_logic;
 		X 		: in std_logic;
@@ -275,6 +307,7 @@ end component;
 component register_16bit_s_p is
 
 	port(
+	    ENABLE  : in std_logic;
 		CLK		: in std_logic;
 		RST 	: in std_logic;
 		X 		: in std_logic;
@@ -321,21 +354,24 @@ end component;
 
 
 begin 
+    
     o_mem_we <= '0';
     -- PORT MAPPING --
         reg_sel_output: register_2bit_s_p port map (
-            CLK	=> enable_rso,                   
+            CLK	=> i_clk,  
+            ENABLE => enable_rso,               
             RST => i_rst,	                   
             X 	=> i_w,                
             OUTPUT => out_selection
          );
-         enable_reg_uscita: process( i_clk, i_start, director)
+         enable_reg_uscita: process(  i_start, director)
             begin
-                enable_rso <= i_clk AND i_start AND director;
+                enable_rso <= i_start AND director;
             end process;
          
          reg_address: register_16bit_s_p port map (
-            CLK	=> enable_ram,
+            ENABLE => enable_ram,  
+            CLK	=> i_clk,
             RST => rst_cnd_ram,
             X 	=> i_w,
             OUTPUT => o_mem_addr
@@ -343,11 +379,14 @@ begin
          ); 
          
          
-         en_rst_reg_address: process( i_clk, i_start, director, i_rst)
+         en_reg_address: process( i_start, director)
              begin 
-                 enable_ram  <= i_clk AND i_start AND (NOT director);
-                 rst_cnd_ram <= i_rst OR director;
+                 enable_ram  <= i_start AND (NOT director);
              end process;
+         rst_reg_address: process(i_rst, director)
+            begin
+                rst_cnd_ram <= i_rst OR director;
+            end process;
      -- OUTPUT REGISTERS ENTITIES --
 
          z0_reg_out: register_8bit_p_p  port map(
@@ -405,7 +444,7 @@ begin
             mem_en  => o_mem_en
     );
     -- END PORT MAPPING --
-    
+
     -- PROCESSES --
     set_output : process (out_z0_signal, out_z1_signal, out_z2_signal, out_z3_signal, done_signal) 
         begin 
@@ -431,5 +470,3 @@ begin
     
 
 end project_reti_logiche_arch;
-
-
