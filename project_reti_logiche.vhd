@@ -203,11 +203,7 @@ architecture arch_controller of fsm_controller is
                         end if;
 
                     when s_secondbit =>
-                        if start = '1' then
                              current_state <= s_address;
-                         else
-                             current_state <= s_readmem;
-                         end if;
                     when s_address =>
                         if start = '1' then
                             current_state <= s_address;
